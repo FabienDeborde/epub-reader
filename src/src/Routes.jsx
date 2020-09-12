@@ -1,8 +1,21 @@
 import React, { memo } from 'react'
-// import PropTypes from 'prop-types'
+import { Router } from '@reach/router'
 
-const Routes = (props) => {
-  return <div>Routes</div>
+import Main from './components/Main'
+import Sidebar from './components/Sidebar'
+
+import 'sanitize.css'
+import './style.sass'
+
+const Routes = () => {
+  return (
+    <div className="wrapper">
+      <Sidebar />
+      <Router className="router">
+        <Main path="/" />
+      </Router>
+    </div>
+  )
 }
 
 export default memo(Routes)
