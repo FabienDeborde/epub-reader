@@ -12,7 +12,7 @@ const books = [
   },
   {
     title: '見本3',
-    ref: require('../../assets/Dalton-Reimer_Peace.epub')
+    ref: require('../../assets/progit-ja.1016.epub')
   }
 ]
 
