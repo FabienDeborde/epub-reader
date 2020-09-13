@@ -3,35 +3,37 @@ import queryString from 'query-string'
 import PropTypes from 'prop-types'
 
 import epub from 'epubjs'
-import './Main.sass'
 
-const epubRef = 'https://s3.amazonaws.com/moby-dick/moby-dick.epub'
-// const epubRef = require('../../assets/aliceDynamic.epub')
-// const epubRef = require('../../assets/Dalton-Reimer_Peace.epub')
-// const epubRef = require('../../assets/Osutaka_no_Natsu.epub')
-// const epubRef = require('../../assets/Tanka_RyokufuSanka.epub')
-
-const Main = ({ navigate, location }) => {
+const Main = ({ navigate, location, currentBook }) => {
+  const bookRef = useRef(null)
   const [chapters, setChapters] = useState(null)
-  // const [currentChapter, setCurrentChapter] = useState(null)
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
   const [book, setBook] = useState(null)
   const [rendition, setRendition] = useState(null)
   const prevRef = useRef(null)
   const nextRef = useRef(null)
 
-  const createBook = () => {
-    const book = epub(epubRef)
-    const rendition = book.renderTo('viewer', {
-      method: 'continuous',
-      flow: 'paginated',
-      width: '100%',
-      height: 600,
-      spread: 'always'
-    })
-    setBook(book)
-    setRendition(rendition)
-  }
+  const createBook = useCallback(
+    () => {
+      if (bookRef && bookRef.current) bookRef.current.destroy()
+      const newBook = epub(currentBook)
+      const rendition = newBook.renderTo('viewer', {
+        method: 'continuous',
+        flow: 'paginated',
+        width: '100%',
+        height: 600,
+        spread: 'always'
+      })
+      setBook(newBook)
+      setRendition(rendition)
+
+      bookRef.current = newBook
+
+      // console.log('book', book)
+      // console.log('rendition', rendition)
+    },
+    [currentBook]
+  )
 
   const _handleKeyboard = useCallback(
     (e) => {
@@ -64,7 +66,7 @@ const Main = ({ navigate, location }) => {
         // })
 
         rendition.on('relocated', function (bookLocation) {
-          console.log(bookLocation)
+          // console.log(bookLocation)
           if (chapters && bookLocation) {
             const index = chapters.findIndex(chapter => chapter.href === bookLocation.start.href)
             setCurrentChapterIndex(index)
@@ -73,9 +75,10 @@ const Main = ({ navigate, location }) => {
         })
 
         try {
+          // eslint-disable-next-line no-unused-vars
           const displayed = await rendition.display(currentSectionIndex)
           const navigation = await book.loaded.navigation
-          console.log('displayed', displayed)
+          // console.log('displayed', displayed)
           setChapters(navigation.toc)
         } catch (error) {
           console.warn('err', error)
@@ -86,16 +89,18 @@ const Main = ({ navigate, location }) => {
   )
 
   useEffect(() => {
-    createBook()
+    if (currentBook) {
+      createBook()
+    }
     // window.addEventListener('resize', renderEpub, false)
     // return () => {
     //   window.removeEventListener('resize', renderEpub, false)
     // }
     return () => {
-      console.log('unloading')
-      // book.destroy()
+      // console.log('unloading')
+      // if (book) book.destroy()
     }
-  }, [])
+  }, [currentBook, createBook])
 
   useEffect(() => {
     document.addEventListener('keyup', _handleKeyboard, false)
@@ -110,11 +115,15 @@ const Main = ({ navigate, location }) => {
 
   useEffect(() => {
     const params = queryString.parse(location.search)
+    if (params && params.loc && !book) {
+
+    }
+
     if (params && params.loc && chapters) {
       const index = chapters.findIndex(chapter => chapter.href === params.loc)
       setCurrentChapterIndex(index)
     }
-  }, [location, chapters])
+  }, [location, chapters, book])
 
   const _handlePrevClick = (e) => {
     book.package.metadata.direction === 'rtl' ? rendition.next() : rendition.prev()
@@ -147,30 +156,38 @@ const Main = ({ navigate, location }) => {
       )
     })
   }
+  if (!currentBook) return null
 
   return (
     <main>
-      <h3>epub</h3>
+      <h3>チャプター一覧</h3>
       <select onChange={_handleSelectChapter} value={currentChapterIndex}>
         { _renderChapters() }
       </select>
       <section>
-        <article id="viewer">
-
-        </article>
+        <article id="viewer"></article>
         {
-          book ? (
-            <div className="controls">
-              <button
-                ref={prevRef}
-                onClick={_handlePrevClick}
-              >‹</button>
-              <button
-                ref={nextRef}
-                onClick={_handleNextClick}
-              >›</button>
-            </div>
-          )
+          book
+            ? (
+              <div className="controls">
+                <button
+                  ref={prevRef}
+                  onClick={_handlePrevClick}
+                  className="control_btn prev"
+                  type="button"
+                  role="navigation"
+                  title="前のページへ"
+                >‹</button>
+                <button
+                  ref={nextRef}
+                  onClick={_handleNextClick}
+                  className="control_btn next"
+                  type="button"
+                  role="navigation"
+                  title="次のページへ"
+                >›</button>
+              </div>
+            )
             : null
         }
       </section>
@@ -182,5 +199,6 @@ export default memo(Main)
 
 Main.propTypes = {
   navigate: PropTypes.func.isRequired,
-  location: PropTypes.object.isRequired
+  location: PropTypes.object.isRequired,
+  currentBook: PropTypes.string
 }

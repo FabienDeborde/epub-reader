@@ -1,18 +1,19 @@
-import React, { memo } from 'react'
+import React, { memo, useState } from 'react'
 import { Router } from '@reach/router'
 
 import Main from './components/Main'
 import Sidebar from './components/Sidebar'
 
 import 'sanitize.css'
-import './style.sass'
+import './styles/styles.sass'
 
 const Routes = () => {
+  const [currentBook, setCurrentBook] = useState(null)
   return (
     <div className="wrapper">
-      <Sidebar />
+      <Sidebar setCurrentBook={setCurrentBook}/>
       <Router className="router">
-        <Main path="/" />
+        <Main path="/" currentBook={currentBook}/>
       </Router>
     </div>
   )
